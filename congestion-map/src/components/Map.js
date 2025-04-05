@@ -106,6 +106,7 @@ function Map({
   is3D,
   selectedVehicles,
   onStatsUpdate,
+  customDatasets = [],
 }) {
   // Basic state
   const containerRef = useRef(null);
@@ -150,15 +151,7 @@ function Map({
     let dayParam = "";
 
     if (timeMode === "specificDay") {
-      const dayNames = [
-        "sunday",
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-      ];
+      const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
       dayParam = dayNames[specificDate.getDay()];
     } else if (timeMode === "dayPattern") {
       dayParam = dayPattern.toLowerCase();
@@ -348,8 +341,12 @@ function Map({
           const minVol = Math.min(...volumes);
           const busiest = vehicleData.find((d) => d.volume === maxVol);
           const leastBusy = vehicleData.find((d) => d.volume === minVol);
-          roadStats = { busiestEntry: busiest.entry_point, busiestVolume: maxVol, leastBusyEntry: leastBusy.entry_point, leastBusyVolume: minVol };
-          
+          roadStats = {
+            busiestEntry: busiest.entry_point,
+            busiestVolume: maxVol,
+            leastBusyEntry: leastBusy.entry_point,
+            leastBusyVolume: minVol,
+          };
 
           // dataset & layer
           const vid = `vehicle-data-${Date.now()}`;
@@ -436,6 +433,53 @@ function Map({
       setDataStats(finalStats);
       if (onStatsUpdate) onStatsUpdate(finalStats);
 
+      if (customDatasets.length > 0) {
+        customDatasets.forEach((customData) => {
+          const datasetId = `custom-${customData.id}-${Date.now()}`;
+
+          datasets.push({
+            info: {
+              id: datasetId,
+              label: customData.label,
+            },
+            data: customData.data,
+          });
+
+          layers.push({
+            id: `custom-layer-${customData.id}-${Date.now()}`,
+            type: customData.visualConfig?.type || "point",
+            config: {
+              dataId: datasetId,
+              label: customData.label,
+              columns: {
+                lat: customData.data.fields.find((f) => f.name.includes("lat"))?.name || "latitude",
+                lng: customData.data.fields.find((f) => f.name.includes("lon"))?.name || "longitude",
+              },
+              isVisible: true,
+              colorField: customData.visualConfig?.colorField
+                ? {
+                    name: customData.visualConfig.colorField,
+                    type: "real",
+                  }
+                : null,
+              colorScale: "quantile",
+              visConfig: {
+                radius: customData.visualConfig?.radius || 50,
+                fixedRadius: false,
+                opacity: 0.8,
+                outline: true,
+                thickness: 2,
+                colorRange: {
+                  colors: customData.visualConfig?.colorRange || ["#FFB6C1", "#FF69B4", "#FF1493"],
+                },
+                filled: true,
+                enable3d: customData.visualConfig?.enable3d || false,
+                elevationScale: customData.visualConfig?.enable3d ? 5 : 0,
+              },
+            },
+          });
+        });
+      }
       setIsLoading(false);
     } catch (err) {
       console.error("Error loading map data:", err);
@@ -465,10 +509,7 @@ function Map({
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-70 z-50">
             <div className="p-4 bg-white rounded shadow border border-red-500">
               <p className="text-red-500">{error}</p>
-              <button
-                className="mt-2 px-4 py-1 bg-blue-500 text-white rounded"
-                onClick={() => setError(null)}
-              >
+              <button className="mt-2 px-4 py-1 bg-blue-500 text-white rounded" onClick={() => setError(null)}>
                 Try Again
               </button>
             </div>
