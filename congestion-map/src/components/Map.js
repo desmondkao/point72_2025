@@ -2,9 +2,15 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import { taskMiddleware } from "react-palm/tasks";
+
 import { keplerGlReducer } from "kepler.gl/reducers";
 import KeplerGl from "kepler.gl";
 import { addDataToMap } from "kepler.gl/actions";
+
+import mapboxgl from 'mapbox-gl';
+console.log("ENV token:", process.env.REACT_APP_MAPBOX_API_KEY);
+mapboxgl.accessToken = process.env.REACT_APP_MAPBOX_API_KEY;
+console.log("mapboxgl.accessToken:", mapboxgl.accessToken);
 
 // Create the store with serializableCheck disabled to prevent Kepler warnings
 const store = configureStore({
@@ -17,6 +23,15 @@ const store = configureStore({
     }).concat(taskMiddleware),
   devTools: process.env.NODE_ENV !== "production",
 });
+
+const LIGHT_STYLE = [
+  {
+    id: "light-v10",
+    label: "Light",
+    url: "mapbox://styles/mapbox/light-v10",
+    icon: null
+  }
+];
 
 // Create a debug panel to display real-time debug information
 const DebugPanel = ({ messages }) => (
@@ -97,6 +112,15 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
   // Function to create Kepler configuration for ridership data
   const createKeplerConfig = useCallback((ridershipDataset, is3D) => {
     addDebug(`Creating Kepler config with 3D mode: ${is3D}`);
+
+    const styleConfig = {
+      styleType: "custom",
+      styleUrl: LIGHT_STYLE[0].url,
+      topLayerGroups: {},
+      visibleLayerGroups: { label:true, road:true, border:false, building:true, water:true, land:true },
+      buildingLayer: { color:[255,255,255], opacity: is3D?0.7:0.1 }
+    };
+    console.log("Generated mapStyle in config:", styleConfig);
     
     const layers = [];
     
@@ -274,22 +298,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
         zoom: 11.5,
         isSplit: false,
       },
-      mapStyle: {
-        styleType: "dark",
-        topLayerGroups: {},
-        visibleLayerGroups: {
-          label: true,
-          road: true,
-          border: false,
-          building: true,
-          water: true,
-          land: true,
-        },
-        buildingLayer: {
-          color: [255, 255, 255],
-          opacity: is3D ? 0.7 : 0.1,
-        },
-      },
+      mapStyle: styleConfig,
     };
   }, [addDebug]);
 
@@ -349,7 +358,8 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
             ]),
           },
         };
-        
+        console.log("Dataset info.id:", ridershipDataset.info.id, "rows:", ridershipDataset.data.rows.length);
+
         addDebug(`Formatted data with ${ridershipDataset.data.rows.length} rows`);
         
         // Set datasets and generate configuration
@@ -451,6 +461,8 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
     loadRidershipData();
   }, [currentTime, timeMode, specificDate, dayPattern, aggregateType, is3D, getTimeParams, createKeplerConfig, addDebug]);
 
+  console.log("Using mapStyles override:", LIGHT_STYLE);
+
   return (
     <Provider store={store}>
       <div className="relative w-full h-full" ref={containerRef}>
@@ -481,10 +493,14 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
         ) : (
           <KeplerGl
             id="nyc-subway-map"
-            mapboxApiAccessToken="pk.eyJ1IjoiZGF0YXdlYXZlciIsImEiOiJja2xnanhpODQydGYzMnFwOWRqcDlnZGVlIn0.4TzHtqEjQAtxm7rgjLQJ5w"
+            mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_API_KEY}
             width={dimensions.width}
             height={dimensions.height}
             appName="NYC Subway Ridership Map"
+            mapStyles={LIGHT_STYLE}
+            datasets={datasets}                               
+            config={mapConfig}
+            readOnly={false}
           />
         )}
         
