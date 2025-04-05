@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 .App {
   text-align: center;
 }
@@ -108,3 +109,118 @@ main {
 .aegean-blue:hover {
   background-color: #245f85; /* light-grey-blue */
 }
+=======
+.App {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Ensure the main container takes full height */
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fix for Kepler.GL container */
+.map-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Make sure the sidebar appears above Kepler components */
+.kepler-gl {
+  z-index: 1;
+}
+
+/* Keep our controls above Kepler's */
+header, .controls-container, .info-sidebar, footer {
+  z-index: 10;
+  position: relative;
+}
+
+/* Make the map container take remaining height */
+main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* Fix for map visualization area to take full height */
+.visualization-area {
+  flex: 1;
+  min-height: 500px; /* Minimum height to ensure visibility */
+  position: relative;
+}
+
+/* Make sure the kepler-gl container fills its parent */
+.kepler-gl {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Hide some of Kepler's default UI that might overlap with our custom UI */
+.kepler-gl__top-right-panel {
+  display: none;
+}
+
+/* Ensure the sidebar stays on top */
+.info-sidebar {
+  z-index: 10;
+  background-color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+}
+
+/* COLORS */
+.navy-blue {
+  background-color: #1C2B42;
+}
+.aegean-blue {
+  background-color: #0B476D;
+}
+
+.aegean-blue:hover {
+  background-color: #245f85; /* light-grey-blue */
+}
+>>>>>>> Stashed changes
