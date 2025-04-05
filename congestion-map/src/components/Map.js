@@ -1,4 +1,3 @@
-// App.js
 import React, { useEffect, useState } from "react";
 import { Provider } from "react-redux";
 import { createStore, combineReducers, applyMiddleware } from "redux";
@@ -15,7 +14,7 @@ const reducers = combineReducers({
 // Create the store
 const store = createStore(reducers, {}, applyMiddleware(taskMiddleware));
 
-function Map() {
+function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, is3D }) {
   const [data, setData] = useState(null);
   const [mapConfig, setMapConfig] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -46,6 +45,30 @@ function Map() {
     }
 
     return parsedData;
+  };
+
+  // Function to filter data based on time selections
+  const filterDataByTimeSelections = (data) => {
+    if (!data) return data;
+    
+    // Format the time for comparison (from minutes to hour)
+    const timeHour = Math.floor(currentTime / 60);
+    
+    // This is a placeholder for actual filtering logic
+    // In a real app, you would implement filtering based on:
+    // - timeMode (specificDay, dayPattern, aggregate)
+    // - specificDate, dayPattern, or aggregateType
+    // - currentTime
+    
+    console.log("Filtering data with:", { 
+      timeMode, 
+      specificDate: timeMode === 'specificDay' ? specificDate : null,
+      dayPattern: timeMode === 'dayPattern' ? dayPattern : null,
+      aggregateType: timeMode === 'aggregate' ? aggregateType : null,
+      timeHour 
+    });
+    
+    return data;
   };
 
   useEffect(() => {
@@ -168,11 +191,11 @@ function Map() {
             },
           },
           mapState: {
-            bearing: 0,
-            dragRotate: true,
+            bearing: is3D ? 24 : 0,
+            dragRotate: is3D,
             latitude: 40.7128,
             longitude: -74.006,
-            pitch: 40,
+            pitch: is3D ? 40 : 0,
             zoom: 11.5,
             isSplit: false,
           },
@@ -189,7 +212,7 @@ function Map() {
             },
             buildingLayer: {
               color: [255, 255, 255],
-              opacity: 0.7,
+              opacity: is3D ? 0.7 : 0.1,
             },
           },
         };
@@ -200,39 +223,64 @@ function Map() {
         console.error("Error loading data:", error);
         setIsLoading(false);
       });
-  }, []);
+  }, [is3D]);
 
+  // Update the map when time selections change
   useEffect(() => {
     if (data) {
-      // Dispatch action to add data to the map
+      // In a real app, you would filter the data based on the time selections
+      const filteredData = filterDataByTimeSelections(data);
+
+      // Update 3D settings
+      const updatedMapConfig = {
+        ...mapConfig,
+        mapState: {
+          ...mapConfig.mapState,
+          bearing: is3D ? 24 : 0,
+          dragRotate: is3D,
+          pitch: is3D ? 40 : 0,
+        },
+        mapStyle: {
+          ...mapConfig.mapStyle,
+          buildingLayer: {
+            ...mapConfig.mapStyle?.buildingLayer,
+            opacity: is3D ? 0.7 : 0.1,
+          }
+        }
+      };
+
+      // Dispatch action to update the map
       store.dispatch(
         addDataToMap({
-          datasets: [data],
+          datasets: [filteredData || data],
           option: {
-            centerMap: true,
+            centerMap: false,
             readOnly: false,
           },
-          config: mapConfig,
+          config: updatedMapConfig,
         })
       );
     }
-  }, [data, mapConfig]);
+  }, [data, mapConfig, currentTime, timeMode, specificDate, dayPattern, aggregateType, is3D, filterDataByTimeSelections]);
 
   return (
     <Provider store={store}>
-      <div className="app">
-        <div className="map-container">
-          {isLoading ? (
-            <div className="loading">Loading NYC Toll Data...</div>
-          ) : (
-            <KeplerGl
-              id="nyc-toll-map"
-              mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_API_KEY}
-              width={window.innerWidth}
-              height={window.innerHeight}
-            />
-          )}
-        </div>
+      <div className="relative w-full h-full">
+        {isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="p-4 bg-white rounded-lg shadow-md">
+              <p className="text-lg font-medium text-gray-800">Loading NYC Toll Data...</p>
+            </div>
+          </div>
+        ) : (
+          <KeplerGl
+            id="nyc-toll-map"
+            mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_API_KEY}
+            width="100%"
+            height="100%"
+            appName="NYC Congestion Map"
+          />
+        )}
       </div>
     </Provider>
   );
