@@ -37,22 +37,13 @@
   }
 }
 
-/* Ensure the main container takes full height */
-#root {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+
 
 /* Fix for Kepler.GL container */
 .map-container {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
-  height: 100%;
+  height: 100vh;
 }
-
 /* Make sure the sidebar appears above Kepler components */
 .kepler-gl {
   z-index: 1;

@@ -1,9 +1,11 @@
+// App.js - Updated with vehicle selection
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp, DollarSign, Info, Clock, Calendar, BarChart2 } from 'lucide-react';
 import VisualizationModeSelector from './components/VisualizationModeSelector';
 import MapDimensionToggle from './components/MapDimensionToggle';
 import Map from './components/Map';
-import './App.css'; // We'll create this for additional styling
+import './App.css';
+import "kepler.gl/umd/keplergl.min.css";
 
 function App() {
   // State for time selection
@@ -19,6 +21,9 @@ function App() {
   const [showControls, setShowControls] = useState(true);
   const [estimatedCost, setEstimatedCost] = useState('23.00');
   
+  // State for vehicle selection
+  const [selectedVehicles, setSelectedVehicles] = useState([1,2,3,4,5,6,7]);
+
   // Convert minutes to formatted time
   const formatTime = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -35,9 +40,67 @@ function App() {
     });
   };
 
-  // Update data based on time selection
+  // Calculate vehicle-specific toll based on selected vehicles
+  const calculateToll = (time, selectedVehicleTypes) => {
+    const hour = Math.floor(time / 60);
+    const isPeak = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18);
+    const isOvernight = (hour >= 22 || hour <= 5);
+    
+    // If no vehicles selected, return 0
+    if (!selectedVehicleTypes.length) return '0.00';
+    
+    // Vehicle type fee map
+    const vehicleFees = {
+      1: { peak: 9.00, overnight: 2.25, regular: 4.50 },    // Cars, Pickups & Vans
+      2: { peak: 14.40, overnight: 3.60, regular: 7.20 },   // Single-Unit Trucks
+      3: { peak: 21.60, overnight: 5.40, regular: 10.80 },  // Multi-Unit Trucks
+      4: { peak: 14.40, overnight: 3.60, regular: 7.20 },   // Buses
+      5: { peak: 4.50, overnight: 1.05, regular: 2.25 },    // Motorcycles
+      6: { peak: 0.75, overnight: 0.75, regular: 0.75 }     // Taxi/FHV
+      // Subway (7) has no toll
+    };
+    
+    // Get only road vehicles (1-6)
+    const roadVehicles = selectedVehicleTypes.filter(v => v >= 1 && v <= 6);
+    
+    if (roadVehicles.length === 0) return '0.00';
+    
+    // For simplicity, use the highest toll vehicle as representative
+    const highestTollVehicle = roadVehicles.reduce((highest, current) => {
+      const currentFee = isPeak ? vehicleFees[current].peak : 
+                        isOvernight ? vehicleFees[current].overnight : 
+                        vehicleFees[current].regular;
+      
+      const highestFee = isPeak ? vehicleFees[highest].peak : 
+                        isOvernight ? vehicleFees[highest].overnight :
+                        vehicleFees[highest].regular;
+      
+      return currentFee > highestFee ? current : highest;
+    }, roadVehicles[0]);
+    
+    // Get the fee for the time period
+    let fee;
+    if (isPeak) {
+      fee = vehicleFees[highestTollVehicle].peak;
+    } else if (isOvernight) {
+      fee = vehicleFees[highestTollVehicle].overnight;
+    } else {
+      fee = vehicleFees[highestTollVehicle].regular;
+    }
+    
+    return fee.toFixed(2);
+  };
+
+  // Update data based on time selection and vehicle types
   useEffect(() => {
-    // This would be where you fetch or filter data based on the current selections
+    // Update estimated cost based on time and selected vehicles
+    const newCost = calculateToll(currentTime, selectedVehicles);
+
+    // Only call setter if it's different
+    if (newCost !== estimatedCost) {
+      setEstimatedCost(newCost);
+    }
+    
     console.log('Selection changed:', {
       timeMode,
       specificDate: timeMode === 'specificDay' ? specificDate : null,
@@ -45,21 +108,15 @@ function App() {
       dayPattern: timeMode === 'dayPattern' ? dayPattern : null,
       aggregateType: timeMode === 'aggregate' ? aggregateType : null,
       visualizationMode,
-      is3D: visualizationMode === 'map' ? is3D : null
+      is3D: visualizationMode === 'map' ? is3D : null,
+      selectedVehicles
     });
-    
-    // Simulate updating the cost based on time
-    const hour = Math.floor(currentTime / 60);
-    if (hour >= 7 && hour <= 9) {
-      setEstimatedCost('23.00'); // Higher during morning rush
-    } else if (hour >= 16 && hour <= 18) {
-      setEstimatedCost('21.00'); // Higher during evening rush
-    } else if (hour >= 22 || hour <= 5) {
-      setEstimatedCost('15.00'); // Lower at night
-    } else {
-      setEstimatedCost('18.00'); // Regular daytime
-    }
-  }, [timeMode, specificDate, currentTime, dayPattern, aggregateType, visualizationMode, is3D]);
+  }, [timeMode, specificDate, currentTime, estimatedCost, dayPattern, aggregateType, visualizationMode, is3D, selectedVehicles]);
+  
+  // Handle vehicle selection changes
+  const handleVehicleSelectionChange = (newSelection) => {
+    setSelectedVehicles(newSelection);
+  };
   
   // Function to render the graph view
   const renderGraphView = () => {
@@ -93,7 +150,7 @@ function App() {
               </div>
             </div>
             
-            <button className="aegean-blue hover:light-grey-blue rounded-lg p-2 flex items-center gap-1">
+            <button className="aegean-blue rounded-lg p-2 flex items-center gap-1">
               <Info size={18} />
               <span>About</span>
             </button>
@@ -251,6 +308,8 @@ function App() {
                 dayPattern={dayPattern}
                 aggregateType={aggregateType}
                 is3D={is3D}
+                selectedVehicles={selectedVehicles}
+                onVehicleSelectionChange={handleVehicleSelectionChange}
               />
             ) : (
               renderGraphView()
