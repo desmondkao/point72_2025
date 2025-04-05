@@ -46,7 +46,8 @@ def get_ridership_predictions():
         if RIDERSHIP_AVAILABLE:
             print("Using actual ridership prediction function")
             # Use your actual ridership prediction function
-            predictions_df = ridership()
+            predictions_df = ridership(time_param, day_param)
+
             
             print(f"Ridership predictions shape: {predictions_df.shape}")
             print(f"Ridership predictions columns: {predictions_df.columns}")

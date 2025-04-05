@@ -184,7 +184,6 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
       const timeString = `${timeHour}:${minutes.toString().padStart(2, '0')}`;
       
       addDebug(`Loading data for time: ${timeString} day: ${dayParam} with vehicles: ${selectedVehicles.join(', ')}`);
-      
       // Create layers and datasets array
       const datasets = [];
       const layers = [];
@@ -311,7 +310,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
           // Create subway layer
           layers.push({
             id: `subway-layer-${Date.now()}`,
-            type: is3D ? "hexagon" : "point",
+            type: is3D ? "grid" : "point",
             config: {
               dataId: subwayDatasetId,
               label: "Subway Ridership",
@@ -481,7 +480,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
                   },
                   filled: true,
                   enable3d: is3D,
-                  elevationScale: is3D ? 5 : 0,
+                  elevationScale: is3D ? 10 : 0,
                   elevationField: is3D ? {
                     name: "volume"
                   } : null

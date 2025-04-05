@@ -1,9 +1,9 @@
 import pandas as pd
-import requests
 import numpy as np
 from datetime import datetime, timedelta
 import pickle
 import os
+import time
 
 # Function to safely find the data file
 def find_file(file_path, fallback_paths=None):
@@ -19,7 +19,7 @@ def find_file(file_path, fallback_paths=None):
     print(f"Warning: Could not find file at {file_path} or any fallback paths")
     return None
 
-# Reads in stations in Manhattan
+# Read in stations in Manhattan
 stops_file = find_file(
     "utils/data/manhattan_stops.csv", 
     ["manhattan_stops.csv", "backend/utils/data/manhattan_stops.csv"]
@@ -38,188 +38,219 @@ else:
     })
     manhattan_unique = manhattan_stops["Stop Name"].unique()
 
-# Function takes in timeframe as input and outputs the most recently available data
-def generate_data(timeframe):
-    # 380 hr offset cuz need data
-    # april 24 -- deprecated tbh bc the 2025 api is entirely differnet so i'm time machining it back to the original hackathon day.
-    current_time = datetime(2024, 4, 27, 11, 0, 0) - timedelta(hours=380)
-    print(f"Starting data search from: {current_time}")
+def ridership(time_str=None, day_str=None):
+    """
+    Get ridership predictions for Manhattan subway stations
     
-    # Add a safety counter to prevent infinite loops
-    max_attempts = 24  # Try for a maximum of 24 hours back
-    attempts = 0
+    Parameters:
+    time_str (str): Time in format "HH:MM" (default: current time)
+    day_str (str): Day of week (default: current day)
     
-    df_sub = pd.DataFrame()
+    Returns:
+    pandas.DataFrame: DataFrame with station names and ridership predictions
+    """
+    print(f"Generating ridership predictions for time={time_str}, day={day_str}")
     
-    # Try to find the first available dataset
-    while len(df_sub) == 0 and attempts < max_attempts:
-        try:
-            formatted_time = current_time.strftime('%Y-%m-%dT%H:00:00')
-            url = f"https://data.ny.gov/resource/wujg-7c2s.json?$where=transit_timestamp >= '{formatted_time}'&$limit=1000"
-            
-            print(f"Fetching data from: {url}")
-            response = requests.get(url, timeout=10)  # Add a timeout
-            
-            if response.status_code == 200:
-                data = response.json()
-                df_sub = pd.DataFrame.from_dict(data)
-                print(f"Found {len(df_sub)} records")
-            else:
-                print(f"API returned status code: {response.status_code}")
-            
-        except Exception as e:
-            print(f"Error fetching data: {e}")
-        
-        # Move back one hour and try again
-        current_time = current_time - timedelta(hours=1)
-        attempts += 1
-    
-    # If we couldn't find any data, return an empty DataFrame with the expected columns
-    if len(df_sub) == 0:
-        print("No data found after multiple attempts")
-        return pd.DataFrame(columns=["transit_timestamp", "station_complex", "ridership", "transfers"])
-    
-    # Get additional data for the timeframe
-    for j in range(min(timeframe, 12)):  # Limit to at most 12 hours to avoid excessive API calls
-        try:
-            current_time = current_time - timedelta(hours=1)
-            formatted_time = current_time.strftime('%Y-%m-%dT%H:00:00')
-            url = f"https://data.ny.gov/resource/wujg-7c2s.json?$where=transit_timestamp >= '{formatted_time}'&$limit=1000"
-            
-            response = requests.get(url, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                df_temp = pd.DataFrame.from_dict(data)
-                df_sub = pd.concat([df_sub, df_temp], axis=0)
-                print(f"Added {len(df_temp)} records")
-            else:
-                print(f"API returned status code: {response.status_code}")
-        except Exception as e:
-            print(f"Error fetching additional data: {e}")
-    
-    # Filter and process data
-    if "station_complex" not in df_sub.columns or "ridership" not in df_sub.columns:
-        print("Missing required columns in data")
-        return pd.DataFrame(columns=["transit_timestamp", "station_complex", "ridership", "transfers"])
-    
-    # Filters dataframe
-    filtered_df = df_sub[["station_complex", "ridership", "transfers", "transit_timestamp"]]
-    
-    # Splits stations accordingly
     try:
-        expanded_data = filtered_df.drop("station_complex", axis=1).join(
-            filtered_df["station_complex"]
-            .str.split("/")
-            .explode("station_complex")
-            .reset_index(drop=True)
-        )
+        # Set default time and day if not provided
+        if time_str is None:
+            now = datetime.now()
+            time_str = now.strftime("%H:%M")
         
-        expanded_data["station_complex"] = expanded_data["station_complex"].str.replace(
-            r"\s*\([^)]+\)", "", regex=True
-        )
-        expanded_data["ridership"] = pd.to_numeric(
-            expanded_data["ridership"], errors="coerce"
-        )
-        expanded_data["transfers"] = pd.to_numeric(
-            expanded_data["transfers"], errors="coerce"
-        )
-        expanded_data = expanded_data.dropna(subset=["ridership", "transfers"])
+        if day_str is None:
+            now = datetime.now()
+            day_str = now.strftime("%A").lower()
         
-        # Finds sum of ridership for stations with multiple entries
-        consolidated_data = (
-            expanded_data.groupby(["transit_timestamp", "station_complex"])
-            .agg({"ridership": "sum", "transfers": "sum"})
-            .reset_index()
-        )
+        # Parse the time
+        try:
+            hour, minute = map(int, time_str.split(':'))
+            # Calculate the 10-minute time bin (0-143)
+            time_bin = (hour * 60 + minute) // 10
+        except Exception as e:
+            print(f"Error parsing time '{time_str}': {e}")
+            # Default to current time bin
+            now = datetime.now()
+            hour, minute = now.hour, now.minute
+            time_bin = (hour * 60 + minute) // 10
         
-        # Filter to Manhattan stations
-        consolidated_data = consolidated_data[
-            consolidated_data["station_complex"].isin(manhattan_unique)
-        ]
+        # Standardize day of week
+        day_map = {
+            'monday': 'Monday',
+            'tuesday': 'Tuesday',
+            'wednesday': 'Wednesday',
+            'thursday': 'Thursday',
+            'friday': 'Friday',
+            'saturday': 'Saturday',
+            'sunday': 'Sunday',
+            'weekday': 'Weekday',
+            'weekend': 'Weekend',
+            'weekdays': 'Weekday',
+            'weekends': 'Weekend',
+            'all': 'All'
+        }
         
-        print(f"Final dataset has {len(consolidated_data)} records for Manhattan stations")
-        return consolidated_data
-    except Exception as e:
-        print(f"Error processing data: {e}")
-        return pd.DataFrame(columns=["transit_timestamp", "station_complex", "ridership", "transfers"])
-
-# Function uses provided models or defaults if models are unavailable
-def ridership():
-    try:
-        # Check multiple possible locations for the model file
+        day_of_week = day_map.get(day_str.lower(), 'Weekday')
+        
+        # Check if day is a special aggregate
+        is_aggregate = day_of_week in ['Weekday', 'Weekend', 'All']
+        
+        # Weekday list for aggregation
+        weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+        weekend_days = ['Saturday', 'Sunday']
+        
+        # Load model file
         model_path = find_file(
             "utils/models.pickle", 
             ["models.pickle", "backend/utils/models.pickle"]
         )
         
         if not model_path:
-            print("Warning: Model file not found. Generating random predictions.")
-            # Create simple default predictions
-            ridership_pred = {station: np.random.randint(100, 1000) for station in manhattan_unique}
-            return pd.DataFrame(list(ridership_pred.items()), columns=["station", "ridership_pred"])
+            print("Model file not found. Generating random predictions.")
+            return generate_fallback_predictions()
         
         # Load models
         print(f"Loading model from {model_path}")
         with open(model_path, "rb") as handle:
             models = pickle.load(handle)
         
-        # Get data
-        consolidated_data = generate_data(3)
+        if not models or not isinstance(models, dict):
+            print("Invalid model format")
+            return generate_fallback_predictions()
         
-        if len(consolidated_data) == 0:
-            print("No data available for predictions")
-            ridership_pred = {station: np.random.randint(100, 1000) for station in manhattan_unique}
-            return pd.DataFrame(list(ridership_pred.items()), columns=["station", "ridership_pred"])
-        
-        # Calculate predictions
+        # Generate predictions for each station
         ridership_pred = {}
         
         for station in manhattan_unique:
             try:
-                # Check if we have data for this station
-                station_df = consolidated_data[consolidated_data["station_complex"] == station]
-                
-                if len(station_df) < 3:
-                    # Not enough data for this station, use random prediction
+                # Skip if station not in models
+                if station not in models.get("by_station", {}):
                     ridership_pred[station] = np.random.randint(100, 1000)
                     continue
                 
-                station_df = station_df.sort_values("transit_timestamp")
-                station_df["transit_timestamp"] = pd.to_datetime(station_df["transit_timestamp"])
-                station_df = station_df.dropna(subset=["ridership"])
-                station_df.reset_index(inplace=True, drop=True)
+                # Get base station statistics
+                station_data = models["by_station"][station]
+                base_ridership = station_data.get("avg_ridership", 500)
                 
-                # Check if station exists in models
-                if station in models:
-                    coef = models[station]
-                    
-                    # Predict function
-                    def predict(coef, history):
-                        yhat = coef[0]
-                        for i in range(1, len(coef)):
-                            if i <= len(history):
-                                yhat += coef[i] * history[-i]
-                        return yhat
-                    
-                    prediction = round(predict(coef, station_df["ridership"].values), 2)
-                    ridership_pred[station] = prediction
+                # Adjust for time of day if we have the pattern
+                time_factor = 1.0
+                if station in models.get("time_patterns", {}):
+                    time_patterns = models["time_patterns"][station]
+                    time_factor = time_patterns.get(time_bin, 1.0)
+                
+                # Adjust for day of week
+                day_factor = 1.0
+                
+                if is_aggregate:
+                    # For aggregate days, average the relevant day factors
+                    if station in models.get("day_of_week_factors", {}):
+                        day_factors = models["day_of_week_factors"][station]
+                        
+                        if day_of_week == 'Weekday':
+                            # Average the weekday factors
+                            available_days = [d for d in weekdays if d in day_factors]
+                            if available_days:
+                                day_factor = sum(day_factors.get(d, 1.0) for d in available_days) / len(available_days)
+                        
+                        elif day_of_week == 'Weekend':
+                            # Average the weekend factors
+                            available_days = [d for d in weekend_days if d in day_factors]
+                            if available_days:
+                                day_factor = sum(day_factors.get(d, 1.0) for d in available_days) / len(available_days)
+                
                 else:
-                    # No model for this station, use average of available data
-                    ridership_pred[station] = round(station_df["ridership"].mean(), 2)
+                    # Use the specific day factor if available
+                    if station in models.get("day_of_week_factors", {}):
+                        day_factors = models["day_of_week_factors"][station]
+                        day_factor = day_factors.get(day_of_week, 1.0)
+                
+                # Check if we have a specific time model for this day and station
+                specific_prediction = None
+                
+                if station in models.get("by_day_and_time", {}) and (not is_aggregate) and day_of_week in models["by_day_and_time"][station]:
+                    day_time_data = models["by_day_and_time"][station][day_of_week]
+                    if time_bin in day_time_data:
+                        specific_prediction = day_time_data[time_bin]
+                
+                # If we have a specific prediction, use it, otherwise calculate from factors
+                if specific_prediction is not None:
+                    prediction = specific_prediction
+                else:
+                    prediction = base_ridership * day_factor * time_factor
+                
+                # Apply time-of-day adjustment for realism
+                # Early morning (midnight-5am): reduce ridership
+                if 0 <= hour < 5:
+                    prediction *= 0.5 * (hour + 1) / 5  # Gradual increase from midnight to 5am
+                # Morning rush (7am-9am): increase ridership
+                elif 7 <= hour <= 9:
+                    prediction *= 1.5
+                # Evening rush (4pm-7pm): increase ridership
+                elif 16 <= hour <= 19:
+                    prediction *= 1.4
+                # Late night (10pm-midnight): decrease ridership
+                elif 22 <= hour < 24:
+                    prediction *= 0.7
+                
+                # Add some random variation (±10%)
+                variation = np.random.uniform(0.9, 1.1)
+                prediction *= variation
+                
+                # Ensure prediction is positive
+                prediction = max(10, prediction)
+                
+                # Round to 2 decimal places
+                ridership_pred[station] = round(prediction, 2)
+            
             except Exception as e:
-                print(f"Error processing station {station}: {e}")
+                print(f"Error predicting for station {station}: {e}")
                 ridership_pred[station] = np.random.randint(100, 1000)
         
-        return pd.DataFrame(list(ridership_pred.items()), columns=["station", "ridership_pred"])
+        # Convert results to DataFrame
+        result_df = pd.DataFrame(list(ridership_pred.items()), columns=["station", "ridership_pred"])
+        
+        # Add timestamp for debugging
+        result_df["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        result_df["for_time"] = f"{hour:02d}:{minute:02d}"
+        result_df["for_day"] = day_of_week
+        
+        return result_df
     
     except Exception as e:
         print(f"Critical error in ridership prediction: {e}")
-        # Return fallback predictions
-        ridership_pred = {station: np.random.randint(100, 1000) for station in manhattan_unique}
-        return pd.DataFrame(list(ridership_pred.items()), columns=["station", "ridership_pred"])
+        return generate_fallback_predictions()
+
+def generate_fallback_predictions():
+    """Generate random ridership predictions when model fails"""
+    print("Generating fallback ridership predictions")
+    
+    current_hour = datetime.now().hour
+    
+    # Time-based multiplier
+    multiplier = 1.0
+    if 7 <= current_hour <= 9:  # Morning rush
+        multiplier = 2.5
+    elif 16 <= current_hour <= 19:  # Evening rush
+        multiplier = 2.3
+    elif current_hour >= 22 or current_hour <= 5:  # Late night
+        multiplier = 0.4
+    
+    # Generate predictions with time-based adjustment
+    ridership_pred = {}
+    for station in manhattan_unique:
+        base = np.random.randint(200, 800)
+        ridership_pred[station] = round(base * multiplier, 2)
+    
+    return pd.DataFrame(list(ridership_pred.items()), columns=["station", "ridership_pred"])
 
 if __name__ == "__main__":
-    # For testing, call ridership function
-    result = ridership()
-    print(f"Generated predictions for {len(result)} stations")
-    print(result.head())
+    # For testing, call ridership function with various times
+    test_times = ["08:30", "12:00", "17:30", "22:00"]
+    test_days = ["Monday", "Saturday"]
+    
+    for day in test_days:
+        for time in test_times:
+            print(f"\nTesting {day} at {time}:")
+            result = ridership(time, day)
+            print(f"Generated predictions for {len(result)} stations")
+            print(result.head(3))
+            time.sleep(1)  # Short pause between tests
