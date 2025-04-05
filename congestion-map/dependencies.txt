@@ -1,0 +1,43 @@
+congestion-map@1.0.0 /Users/alissawu/point72_2025/congestion-map
+├── @emotion/is-prop-valid@1.3.1 extraneous
+├── @emotion/memoize@0.9.0 extraneous
+├── @reduxjs/toolkit@2.6.1
+├── @types/deck.gl__aggregation-layers@ extraneous
+├── @types/deck.gl__arcgis@ extraneous
+├── @types/deck.gl__carto@ extraneous
+├── @types/deck.gl__core@ extraneous
+├── @types/deck.gl__extensions@ extraneous
+├── @types/deck.gl__geo-layers@ extraneous
+├── @types/deck.gl__google-maps@ extraneous
+├── @types/deck.gl__json@ extraneous
+├── @types/deck.gl__layers@ extraneous
+├── @types/deck.gl__mapbox@ extraneous
+├── @types/deck.gl__mesh-layers@ extraneous
+├── @types/deck.gl__react@ extraneous
+├── @types/deck.gl@ extraneous
+├── @types/luma.gl__constants@ extraneous
+├── @types/luma.gl__core@ extraneous
+├── @types/luma.gl__gltools@ extraneous
+├── @types/luma.gl__webgl-state-tracker@ extraneous
+├── @types/luma.gl__webgl@ extraneous
+├── @types/math.gl__core@ extraneous
+├── @types/math.gl@ extraneous
+├── assert@2.1.0
+├── autoprefixer@10.4.21
+├── kepler.gl@3.1.1
+├── lucide-react@0.487.0
+├── postcss@8.5.3
+├── querystring-es3@0.2.1
+├── react-app-rewired@2.2.1
+├── react-datepicker@8.2.1
+├── react-dom@18.3.1
+├── react-palm@3.3.8
+├── react-redux@8.1.3
+├── react-scripts@5.0.1
+├── react@18.3.1
+├── redux@4.2.1
+├── styled-components@6.1.17
+├── tailwindcss@3.4.17
+├── url@0.11.4
+└── web-vitals@2.1.4
+
