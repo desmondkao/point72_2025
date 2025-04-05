@@ -412,6 +412,18 @@ function App() {
                         <span className="font-medium">{ridershipStats.maxStationName}</span>
                       </div>
                     )}
+                    {ridershipStats.busiestEntry && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Busiest Entry:</span>
+                        <span className="font-medium">{ridershipStats.busiestEntry}</span>
+                      </div>
+                    )}
+                    {ridershipStats.leastBusyEntry && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Least Busy Entry:</span>
+                        <span className="font-medium">{ridershipStats.leastBusyEntry}</span>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
