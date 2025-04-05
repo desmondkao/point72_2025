@@ -418,6 +418,35 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
           });
 
           if (vehicleData.length > 0) {
+            // Calculate congestion statistics
+            const entryPointTotals = vehicleData.reduce((acc, item) => {
+              acc[item.entry_point] = (acc[item.entry_point] || 0) + item.volume;
+              return acc;
+            }, {});
+
+            const maxCongestion = Math.max(...Object.values(entryPointTotals));
+            const maxCongestionPoint = Object.entries(entryPointTotals).find(([_, value]) => value === maxCongestion);
+
+            // Update the existing stats object
+            const vehicleStats = {
+              maxCongestionPoint: maxCongestionPoint ? maxCongestionPoint[0] : null,
+              maxCongestionVolume: maxCongestion,
+            };
+
+            // Merge with existing stats
+            setDataStats((prevStats) => ({
+              ...prevStats,
+              ...vehicleStats,
+            }));
+
+            // Update parent component with stats
+            if (onStatsUpdate && typeof onStatsUpdate === "function") {
+              onStatsUpdate((prevStats) => ({
+                ...prevStats,
+                ...vehicleStats,
+              }));
+            }
+
             // Create vehicle congestion dataset
             const vehicleDatasetId = `vehicle-data-${Date.now()}`;
             datasets.push({
@@ -476,7 +505,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
                     name: "CustomBlue",
                     type: "sequential",
                     category: "Sequential",
-                    colors: ["#0000ff", "#3333ff", "#6666ff", "#9999ff", "#ccccff", "#ffffff"], // Blue to white 
+                    colors: ["#0000ff", "#3333ff", "#6666ff", "#9999ff", "#ccccff", "#ffffff"], // Blue to white
                   },
                   filled: true,
                   enable3d: is3D,
