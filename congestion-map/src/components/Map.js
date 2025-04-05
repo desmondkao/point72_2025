@@ -20,12 +20,17 @@ const DebugPanel = ({ messages }) => (
     </div>
   </div>
 );
+const customReducer = keplerGlReducer.initialState({
+  uiState: {
+    currentModal: null,
+  },
+});
 
 // Create a Redux store with immutable state checking DISABLED
 const createMapStore = () => {
   return configureStore({
     reducer: {
-      keplerGl: keplerGlReducer
+      keplerGl: customReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -99,6 +104,33 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
       dayParam
     };
   }, [currentTime, timeMode, specificDate, dayPattern, aggregateType]);
+
+  const defaultConfig = {
+    visState: {
+      layers: [],
+      filters: [],
+    },
+    mapState: {
+      bearing: is3D ? 24 : 0,
+      pitch: is3D ? 50 : 0,
+      latitude: 40.726,
+      longitude: -74.0,
+      zoom: 11.8,
+      dragRotate: is3D,
+    },
+    mapStyle: {
+      styleType: "dark",
+    },
+  };
+
+  useEffect(() => {
+    store.dispatch(
+      addDataToMap({
+        options: { centerMap: true, readOnly: true },
+        defaultConfig,
+      })
+    );
+  }, []);
 
   // Load data when time parameters or vehicle selection changes
   useEffect(() => {
@@ -400,7 +432,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
             dragRotate: is3D
           },
           mapStyle: {
-            styleType: "light"
+            styleType: "dark",
           }
         };
         
