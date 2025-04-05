@@ -1,4 +1,4 @@
-// Map.js - With dropdown vehicle selector
+// Map.js - Connected to real API data
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
@@ -21,127 +21,6 @@ const DebugPanel = ({ messages }) => (
   </div>
 );
 
-// Compact Vehicle Type Dropdown Selector
-const VehicleTypeDropdown = ({ selectedVehicles, onChange }) => {
-  const vehicleTypes = [
-    { id: 1, name: 'Cars, Pickups & Vans', peakFee: 9.00 },
-    { id: 2, name: 'Single-Unit Trucks', peakFee: 14.40 },
-    { id: 3, name: 'Multi-Unit Trucks', peakFee: 21.60 },
-    { id: 4, name: 'Buses', peakFee: 14.40 },
-    { id: 5, name: 'Motorcycles', peakFee: 4.50 },
-    { id: 6, name: 'Taxi/FHV', peakFee: 0.75 },
-    { id: 7, name: 'Subway', peakFee: 0 }
-  ];
-
-  const toggleVehicle = (id) => {
-    if (selectedVehicles.includes(id)) {
-      onChange(selectedVehicles.filter(vehicleId => vehicleId !== id));
-    } else {
-      onChange([...selectedVehicles, id]);
-    }
-  };
-
-  const handleSelectAll = () => {
-    onChange(vehicleTypes.map(v => v.id));
-  };
-
-  const handleSelectNone = () => {
-    onChange([]);
-  };
-
-  return (
-    <div className="flex items-center gap-3">
-      <label className="text-sm font-medium min-w-[80px]">Vehicle Types:</label>
-      <div className="relative flex-grow">
-        <div className="flex flex-wrap gap-1 border border-gray-300 rounded-md p-2 bg-white min-h-[36px]">
-          {selectedVehicles.length === 0 && (
-            <span className="text-sm text-gray-500">None selected</span>
-          )}
-          {selectedVehicles.map(id => {
-            const vehicle = vehicleTypes.find(v => v.id === id);
-            return (
-              <span key={id} className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full flex items-center">
-                {vehicle?.name}
-                <button 
-                  className="ml-1 text-blue-500 hover:text-blue-700"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleVehicle(id);
-                  }}
-                >
-                  ×
-                </button>
-              </span>
-            );
-          })}
-        </div>
-        <div className="absolute right-2 top-2 flex">
-          <button
-            className="text-xs text-gray-500 hover:text-gray-700 ml-2"
-            onClick={handleSelectAll}
-          >
-            All
-          </button>
-          <span className="text-gray-300 mx-1">|</span>
-          <button
-            className="text-xs text-gray-500 hover:text-gray-700"
-            onClick={handleSelectNone}
-          >
-            None
-          </button>
-        </div>
-        <div className="absolute left-0 top-full mt-1 w-full z-50">
-          <div className="hidden group-focus-within:block bg-white border border-gray-300 shadow-lg rounded-md p-2 max-h-48 overflow-y-auto">
-            {vehicleTypes.map(vehicle => (
-              <label key={vehicle.id} className="flex items-center p-1 hover:bg-gray-100 rounded cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedVehicles.includes(vehicle.id)}
-                  onChange={() => toggleVehicle(vehicle.id)}
-                  className="mr-2"
-                />
-                <span className="text-sm">{vehicle.name}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="relative group">
-        <button className="text-xs px-2 py-1 border border-gray-300 rounded-md bg-white hover:bg-gray-50">
-          Select
-        </button>
-        <div className="hidden group-hover:block absolute left-0 top-full mt-1 w-48 z-50 bg-white border border-gray-300 shadow-lg rounded-md p-2 max-h-48 overflow-y-auto">
-          {vehicleTypes.map(vehicle => (
-            <label key={vehicle.id} className="flex items-center p-1 hover:bg-gray-100 rounded cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedVehicles.includes(vehicle.id)}
-                onChange={() => toggleVehicle(vehicle.id)}
-                className="mr-2"
-              />
-              <span className="text-sm">{vehicle.name}</span>
-            </label>
-          ))}
-          <div className="border-t border-gray-200 mt-1 pt-1 flex justify-between">
-            <button
-              className="text-xs text-blue-500 hover:text-blue-700"
-              onClick={handleSelectAll}
-            >
-              Select All
-            </button>
-            <button
-              className="text-xs text-blue-500 hover:text-blue-700"
-              onClick={handleSelectNone}
-            >
-              Clear All
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Create a Redux store with immutable state checking DISABLED
 const createMapStore = () => {
   return configureStore({
@@ -160,7 +39,7 @@ const createMapStore = () => {
 };
 
 // Main Map Component
-function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, is3D, selectedVehicles: initialVehicles, onVehicleSelectionChange }) {
+function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, is3D, selectedVehicles }) {
   // Basic state
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
@@ -169,26 +48,10 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
   const [debugMessages, setDebugMessages] = useState([]);
   const [showDebug, setShowDebug] = useState(true);
   const [mapKey, setMapKey] = useState('initial');
-  const [vehicleSelection, setVehicleSelection] = useState(initialVehicles || [1, 2, 3, 4, 5, 6, 7]);
   const [currentData, setCurrentData] = useState(null);
   
   // Create a new store instance
   const [store] = useState(createMapStore);
-  
-  // Sync vehicle selection with parent component if provided
-  useEffect(() => {
-    if (initialVehicles && JSON.stringify(initialVehicles) !== JSON.stringify(vehicleSelection)) {
-      setVehicleSelection(initialVehicles);
-    }
-  }, [initialVehicles, vehicleSelection]);
-
-  // Update parent component when vehicle selection changes
-  const handleVehicleSelectionChange = (newSelection) => {
-    setVehicleSelection(newSelection);
-    if (onVehicleSelectionChange) {
-      onVehicleSelectionChange(newSelection);
-    }
-  };
   
   // Debug logging helper
   const addDebug = useCallback((message) => {
@@ -247,14 +110,14 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
         const { timeHour, minutes, dayParam } = getTimeParams();
         const timeString = `${timeHour}:${minutes.toString().padStart(2, '0')}`;
         
-        addDebug(`Loading data for time: ${timeString} day: ${dayParam} with vehicles: ${vehicleSelection.join(', ')}`);
+        addDebug(`Loading data for time: ${timeString} day: ${dayParam} with vehicles: ${selectedVehicles.join(', ')}`);
         
         // Create layers and datasets array
         const datasets = [];
         const layers = [];
         
         // Determine if we're showing subway data (vehicle type 7)
-        const showSubwayData = vehicleSelection.includes(7);
+        const showSubwayData = selectedVehicles.includes(7);
         
         // Add subway data if selected
         if (showSubwayData) {
@@ -397,7 +260,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
         }
         
         // Add vehicle congestion data for other vehicle types
-        const showRoadVehicles = vehicleSelection.some(id => id >= 1 && id <= 6);
+        const showRoadVehicles = selectedVehicles.some(id => id >= 1 && id <= 6);
         
         if (showRoadVehicles) {
           try {
@@ -425,7 +288,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
               const baseHourlyFactor = Math.sin((timeHour / 24) * Math.PI * 2) * 0.5 + 0.5;
               const baseVolume = Math.round(1000 * baseHourlyFactor);
               
-              vehicleSelection.forEach(vehicleId => {
+              selectedVehicles.forEach(vehicleId => {
                 if (vehicleId >= 1 && vehicleId <= 6) {
                   // Skip subway
                   const vehicleTypeName = getVehicleTypeName(vehicleId);
@@ -566,7 +429,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
     };
     
     loadData();
-  }, [getTimeParams, is3D, vehicleSelection, addDebug, store]);
+  }, [getTimeParams, is3D, selectedVehicles, addDebug, store]);
 
   // Handle 3D mode changes
   useEffect(() => {
@@ -577,85 +440,57 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
   // Render the map component
   return (
     <Provider store={store}>
-      <div className="flex flex-col h-full">
-        {/* Vehicle selector dropdown in header */}
-        <div className="bg-white p-2 border-b border-gray-200">
-          <VehicleTypeDropdown 
-            selectedVehicles={vehicleSelection}
-            onChange={handleVehicleSelectionChange}
-          />
-        </div>
-        
-        {/* Map area */}
-        <div className="relative flex-grow" ref={containerRef}>
-          {showDebug && <DebugPanel messages={debugMessages} />}
+      <div className="relative w-full h-full" ref={containerRef}>
+        {showDebug && <DebugPanel messages={debugMessages} />}
 
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-70 z-50">
-              <div className="p-4 bg-white rounded shadow">
-                <p>Loading map data...</p>
-              </div>
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-70 z-50">
+            <div className="p-4 bg-white rounded shadow">
+              <p>Loading map data...</p>
             </div>
-          )}
+          </div>
+        )}
 
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-70 z-50">
-              <div className="p-4 bg-white rounded shadow border border-red-500">
-                <p className="text-red-500">{error}</p>
-                <button
-                  className="mt-2 px-4 py-1 bg-blue-500 text-white rounded"
-                  onClick={() => {
-                    setError(null);
-                  }}
-                >
-                  Try Again
-                </button>
-              </div>
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-70 z-50">
+            <div className="p-4 bg-white rounded shadow border border-red-500">
+              <p className="text-red-500">{error}</p>
+              <button
+                className="mt-2 px-4 py-1 bg-blue-500 text-white rounded"
+                onClick={() => {
+                  setError(null);
+                }}
+              >
+                Try Again
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
-          <KeplerGl
-            id="dynamic_map"
-            key={mapKey}
-            mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_API_KEY}
-            width={dimensions.width}
-            height={dimensions.height}
-          />
+        {/* This used to be there but it works now so I'm removing it
+        {is3D && (
+          <div className="absolute top-20 left-2 bg-yellow-100 p-3 rounded shadow-md z-50 border border-yellow-400">
+            <p className="text-yellow-800 font-medium">
+              3D mode is currently disabled to prevent browser crashes.
+            </p>
+          </div>
+        )} 
+         */}
 
-          <button
-            onClick={() => setShowDebug(!showDebug)}
-            className="absolute bottom-4 left-4 bg-white px-3 py-1 text-xs shadow rounded z-50"
-          >
-            {showDebug ? "Hide Debug" : "Show Debug"}
-          </button>
-          
-          {/* Subway Data Statistics - only shown when subway is selected */}
-          {currentData && vehicleSelection.includes(7) && (
-            <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 w-64 z-10">
-              <h3 className="font-semibold mb-2">Subway Statistics</h3>
-              <div className="text-sm space-y-2">
-                <p>
-                  <span className="font-medium">Stations:</span> {currentData.length}
-                </p>
-                <p>
-                  <span className="font-medium">Avg Ridership:</span> {
-                    (currentData.reduce((sum, item) => sum + item.ridership_pred, 0) / currentData.length).toFixed(1)
-                  }
-                </p>
-                <p>
-                  <span className="font-medium">Max Ridership:</span> {
-                    Math.max(...currentData.map(item => item.ridership_pred)).toFixed(1)
-                  }
-                </p>
-                <p>
-                  <span className="font-medium">Min Ridership:</span> {
-                    Math.min(...currentData.map(item => item.ridership_pred)).toFixed(1)
-                  }
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+        <KeplerGl
+          id="dynamic_map"
+          key={mapKey}
+          mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_API_KEY}
+          width={dimensions.width}
+          height={dimensions.height}
+        />
+
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="absolute bottom-4 left-4 bg-white px-3 py-1 text-xs shadow rounded z-50"
+        >
+          {showDebug ? "Hide Debug" : "Show Debug"}
+        </button>
       </div>
     </Provider>
   );

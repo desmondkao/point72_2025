@@ -1,11 +1,11 @@
-// App.js - Updated with vehicle selection
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, DollarSign, Info, Clock, Calendar, BarChart2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, DollarSign, Info, Clock, Calendar, BarChart2, Truck } from 'lucide-react';
 import VisualizationModeSelector from './components/VisualizationModeSelector';
 import MapDimensionToggle from './components/MapDimensionToggle';
 import Map from './components/Map';
-import './App.css';
+import './App.css'; // We'll create this for additional styling
 import "kepler.gl/umd/keplergl.min.css";
+
 
 function App() {
   // State for time selection
@@ -21,7 +21,17 @@ function App() {
   const [showControls, setShowControls] = useState(true);
   const [estimatedCost, setEstimatedCost] = useState('23.00');
   
-  // State for vehicle selection
+  // Vehicle types state
+  const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
+  const [vehicleTypes, setVehicleTypes] = useState([
+    { id: 1, name: 'Cars / Pickups / Vans', selected: true },
+    { id: 2, name: 'Single-Unit Trucks', selected: true },
+    { id: 3, name: 'Multi-Unit Trucks', selected: true },
+    { id: 4, name: 'Buses', selected: true },
+    { id: 5, name: 'Motorcycles', selected: true },
+    { id: 6, name: 'Taxi/FHV', selected: true },
+    { id: 7, name: 'Subway', selected: true },
+  ]);
   const [selectedVehicles, setSelectedVehicles] = useState([1,2,3,4,5,6,7]);
 
   // Convert minutes to formatted time
@@ -40,67 +50,29 @@ function App() {
     });
   };
 
-  // Calculate vehicle-specific toll based on selected vehicles
-  const calculateToll = (time, selectedVehicleTypes) => {
-    const hour = Math.floor(time / 60);
-    const isPeak = (hour >= 7 && hour <= 9) || (hour >= 16 && hour <= 18);
-    const isOvernight = (hour >= 22 || hour <= 5);
-    
-    // If no vehicles selected, return 0
-    if (!selectedVehicleTypes.length) return '0.00';
-    
-    // Vehicle type fee map
-    const vehicleFees = {
-      1: { peak: 9.00, overnight: 2.25, regular: 4.50 },    // Cars, Pickups & Vans
-      2: { peak: 14.40, overnight: 3.60, regular: 7.20 },   // Single-Unit Trucks
-      3: { peak: 21.60, overnight: 5.40, regular: 10.80 },  // Multi-Unit Trucks
-      4: { peak: 14.40, overnight: 3.60, regular: 7.20 },   // Buses
-      5: { peak: 4.50, overnight: 1.05, regular: 2.25 },    // Motorcycles
-      6: { peak: 0.75, overnight: 0.75, regular: 0.75 }     // Taxi/FHV
-      // Subway (7) has no toll
-    };
-    
-    // Get only road vehicles (1-6)
-    const roadVehicles = selectedVehicleTypes.filter(v => v >= 1 && v <= 6);
-    
-    if (roadVehicles.length === 0) return '0.00';
-    
-    // For simplicity, use the highest toll vehicle as representative
-    const highestTollVehicle = roadVehicles.reduce((highest, current) => {
-      const currentFee = isPeak ? vehicleFees[current].peak : 
-                        isOvernight ? vehicleFees[current].overnight : 
-                        vehicleFees[current].regular;
-      
-      const highestFee = isPeak ? vehicleFees[highest].peak : 
-                        isOvernight ? vehicleFees[highest].overnight :
-                        vehicleFees[highest].regular;
-      
-      return currentFee > highestFee ? current : highest;
-    }, roadVehicles[0]);
-    
-    // Get the fee for the time period
-    let fee;
-    if (isPeak) {
-      fee = vehicleFees[highestTollVehicle].peak;
-    } else if (isOvernight) {
-      fee = vehicleFees[highestTollVehicle].overnight;
-    } else {
-      fee = vehicleFees[highestTollVehicle].regular;
-    }
-    
-    return fee.toFixed(2);
+  // Toggle vehicle dropdown
+  const toggleVehicleDropdown = () => {
+    setShowVehicleDropdown(!showVehicleDropdown);
   };
 
-  // Update data based on time selection and vehicle types
-  useEffect(() => {
-    // Update estimated cost based on time and selected vehicles
-    const newCost = calculateToll(currentTime, selectedVehicles);
-
-    // Only call setter if it's different
-    if (newCost !== estimatedCost) {
-      setEstimatedCost(newCost);
-    }
+  // Handle vehicle type selection/deselection
+  const handleVehicleToggle = (vehicleId) => {
+    // Update the vehicle types array
+    const updatedVehicleTypes = vehicleTypes.map(vehicle => 
+      vehicle.id === vehicleId ? { ...vehicle, selected: !vehicle.selected } : vehicle
+    );
+    setVehicleTypes(updatedVehicleTypes);
     
+    // Update the selected vehicles array
+    const updatedSelectedVehicles = updatedVehicleTypes
+      .filter(vehicle => vehicle.selected)
+      .map(vehicle => vehicle.id);
+    setSelectedVehicles(updatedSelectedVehicles);
+  };
+
+  // Update data based on time selection
+  useEffect(() => {
+    // This would be where you fetch or filter data based on the current selections
     console.log('Selection changed:', {
       timeMode,
       specificDate: timeMode === 'specificDay' ? specificDate : null,
@@ -111,12 +83,20 @@ function App() {
       is3D: visualizationMode === 'map' ? is3D : null,
       selectedVehicles
     });
+    
+    // Simulate updating the cost based on time
+    const hour = Math.floor(currentTime / 60);
+    let newCost;
+    if (hour >= 7 && hour <= 9)      newCost = '23.00';
+    else if (hour >= 16 && hour <= 18) newCost = '21.00';
+    else if (hour >= 22 || hour <= 5)  newCost = '15.00';
+    else                               newCost = '18.00';
+
+    // **only** call setter if it's different
+    if (newCost !== estimatedCost) {
+      setEstimatedCost(newCost);
+    }
   }, [timeMode, specificDate, currentTime, estimatedCost, dayPattern, aggregateType, visualizationMode, is3D, selectedVehicles]);
-  
-  // Handle vehicle selection changes
-  const handleVehicleSelectionChange = (newSelection) => {
-    setSelectedVehicles(newSelection);
-  };
   
   // Function to render the graph view
   const renderGraphView = () => {
@@ -291,6 +271,47 @@ function App() {
                     setIs3D={setIs3D} 
                   />
                 )}
+                
+                {/* Vehicle Type Dropdown */}
+                <div className="relative">
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Vehicle Types</h3>
+                  <button
+                    className="flex items-center gap-2 p-2 rounded-md bg-gray-100 hover:bg-gray-200"
+                    onClick={toggleVehicleDropdown}
+                  >
+                    <Truck size={16} />
+                    <span className="text-sm">
+                      {selectedVehicles.length === vehicleTypes.length
+                        ? 'All Vehicles'
+                        : selectedVehicles.length === 0
+                        ? 'No Vehicles'
+                        : `${selectedVehicles.length} Selected`}
+                    </span>
+                    <ChevronDown size={16} className={`transition-transform duration-200 ${showVehicleDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showVehicleDropdown && (
+                    <div className="absolute z-10 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200">
+                      <div className="py-1">
+                        {vehicleTypes.map(vehicle => (
+                          <div 
+                            key={vehicle.id}
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => handleVehicleToggle(vehicle.id)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={vehicle.selected}
+                              onChange={() => {}}
+                              className="mr-2 h-4 w-4"
+                            />
+                            <span>{vehicle.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -309,7 +330,6 @@ function App() {
                 aggregateType={aggregateType}
                 is3D={is3D}
                 selectedVehicles={selectedVehicles}
-                onVehicleSelectionChange={handleVehicleSelectionChange}
               />
             ) : (
               renderGraphView()
@@ -357,6 +377,20 @@ function App() {
                   visualizationMode === 'map' 
                     ? `${is3D ? '3D' : '2D'} Map` 
                     : 'Graph'
+                }
+              </p>
+              
+              {/* Display selected vehicle types */}
+              <p>
+                <span className="font-medium">Vehicles:</span> {
+                  selectedVehicles.length === vehicleTypes.length
+                    ? 'All Types'
+                    : selectedVehicles.length === 0
+                      ? 'None'
+                      : vehicleTypes
+                          .filter(v => selectedVehicles.includes(v.id))
+                          .map(v => v.name)
+                          .join(', ')
                 }
               </p>
             </div>
