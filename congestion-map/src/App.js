@@ -20,6 +20,7 @@ function App() {
   const [is3D, setIs3D] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [estimatedCost, setEstimatedCost] = useState('23.00');
+  const [ridershipStats, setRidershipStats] = useState(null);
   
   // Vehicle types state
   const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
@@ -330,6 +331,7 @@ function App() {
                 aggregateType={aggregateType}
                 is3D={is3D}
                 selectedVehicles={selectedVehicles}
+                onStatsUpdate={setRidershipStats}
               />
             ) : (
               renderGraphView()
@@ -402,6 +404,20 @@ function App() {
                   <span className="text-sm">Current Congestion:</span>
                   <span className="font-medium">76%</span>
                 </div>
+                {ridershipStats && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Avg Subway Ridership:</span>
+                      <span className="font-medium">{ridershipStats.avgRidership?.toFixed(0)}</span>
+                    </div>
+                    {ridershipStats.maxStationName && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Peak Station:</span>
+                        <span className="font-medium">{ridershipStats.maxStationName}</span>
+                      </div>
+                    )}
+                  </>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Peak Time:</span>
                   <span className="font-medium">8:45 AM</span>
