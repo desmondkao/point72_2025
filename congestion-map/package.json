@@ -3,21 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^13.5.0",
+    "assert": "^2.1.0",
+    "kepler.gl": "^2.5.0",
     "lucide-react": "^0.487.0",
-    "react": "^19.1.0",
+    "react": "^16.8.x",
     "react-datepicker": "^8.2.1",
-    "react-dom": "^19.1.0",
+    "react-dom": "^16.8.x",
+    "react-palm": "^3.3.8",
+    "react-redux": "^7.2.9",
     "react-scripts": "5.0.1",
+    "redux": "^4.2.1",
+    "styled-components": "^5.3.10",
+    "url": "^0.11.4",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -41,6 +44,8 @@
   "devDependencies": {
     "autoprefixer": "^10.4.15",
     "postcss": "^8.4.31",
+    "querystring-es3": "^0.2.1",
+    "react-app-rewired": "^2.2.1",
     "tailwindcss": "^3.3.3"
   }
 }
