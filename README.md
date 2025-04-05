@@ -27,7 +27,7 @@ Our tool incorporates sophisticated predictive models that forecast future conge
 - Accurate short-term traffic predictions (hourly/daily).
 - Impact analysis of specific events (holidays, large-scale public events, construction).
 - Scenario testing for potential policy changes in congestion relief zones.
-- Developers the ability to overlay or incorporate personal datasets.
+- The ability for developers to overlay or incorporate personal datasets.
 
 ## Who Benefits?
 
