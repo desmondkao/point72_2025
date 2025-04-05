@@ -26,7 +26,7 @@ const TimeSlider = ({ selectedTime, setSelectedTime }) => {
         type="range"
         min="0"
         max="1439"
-        step="15"
+        step="10"
         value={timeToMinutes(selectedTime)}
         onChange={handleChange}
         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
