@@ -272,7 +272,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
                     name: "Plasma",
                     type: "sequential",
                     category: "Sequential",
-                    colors: ["#0d0887", "#5302a3", "#8b0aa5", "#b83289", "#db5c68", "#f48849", "#febd2a", "#f0f921"]
+                    colors: ["#ff0000", "#ff3333", "#ff6666", "#ff9999", "#ffcccc", "#ffffff"], // Red to white for subway
                   },
                   filled: true,
                   enable3d: is3D,
@@ -400,7 +400,18 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
                       name: "Viridis",
                       type: "sequential",
                       category: "Sequential",
-                      colors: ["#440154", "#482878", "#3e4989", "#31688e", "#26828e", "#1f9e89", "#35b779", "#6ece58", "#b5de2b", "#fde725"]
+                      colors: [
+                        "#440154",
+                        "#482878",
+                        "#3e4989",
+                        "#31688e",
+                        "#26828e",
+                        "#1f9e89",
+                        "#35b779",
+                        "#6ece58",
+                        "#b5de2b",
+                        "#fde725",
+                      ],
                     },
                     filled: true,
                     enable3d: is3D,
