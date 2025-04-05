@@ -1,0 +1,16 @@
+# Runtime dependencies
+@testing-library/dom@^10.4.0
+@testing-library/jest-dom@^6.6.3
+@testing-library/react@^16.3.0
+@testing-library/user-event@^13.5.0
+lucide-react@^0.487.0
+react@^19.1.0
+react-datepicker@^8.2.1
+react-dom@^19.1.0
+react-scripts@5.0.1
+web-vitals@^2.1.4
+
+# Dev dependencies
+autoprefixer@^10.4.15
+postcss@^8.4.31
+tailwindcss@^3.3.3
