@@ -473,21 +473,10 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
                   outline: true,
                   thickness: 2,
                   colorRange: {
-                    name: "Viridis",
+                    name: "CustomBlue",
                     type: "sequential",
                     category: "Sequential",
-                    colors: [
-                      "#440154",
-                      "#482878",
-                      "#3e4989",
-                      "#31688e",
-                      "#26828e",
-                      "#1f9e89",
-                      "#35b779",
-                      "#6ece58",
-                      "#b5de2b",
-                      "#fde725",
-                    ],
+                    colors: ["#0000ff", "#3333ff", "#6666ff", "#9999ff", "#ccccff", "#ffffff"], // Blue to white 
                   },
                   filled: true,
                   enable3d: is3D,

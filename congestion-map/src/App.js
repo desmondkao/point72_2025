@@ -400,10 +400,6 @@ function App() {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <h4 className="font-medium mb-2">Statistics</h4>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Current Congestion:</span>
-                  <span className="font-medium">76%</span>
-                </div>
                 {ridershipStats && (
                   <>
                     <div className="flex items-center justify-between">
@@ -418,14 +414,6 @@ function App() {
                     )}
                   </>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Peak Time:</span>
-                  <span className="font-medium">8:45 AM</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">Avg. Travel Delay:</span>
-                  <span className="font-medium">+12 min</span>
-                </div>
               </div>
             </div>
           </div>
