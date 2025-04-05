@@ -398,7 +398,7 @@ function Map({
                 colorRange: {
                   name: "CustomBlue",
                   type: "sequential",
-                  colors: ["#0000ff", "#3333ff", "#6666ff", "#9999ff", "#ccccff", "#ffffff"],
+                  colors: ["#ffffff", "#ccccff", "#9999ff", "#6666ff", "#3333ff", "#0000ff"],
                 },
                 filled: true,
                 enable3d: is3D,
