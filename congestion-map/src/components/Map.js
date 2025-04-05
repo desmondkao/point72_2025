@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Provider } from "react-redux";
-import { createStore, combineReducers, applyMiddleware } from "redux";
+import { configureStore } from "@reduxjs/toolkit";
 import { taskMiddleware } from "react-palm/tasks";
 import { keplerGlReducer } from "kepler.gl/reducers";
 import KeplerGl from "kepler.gl";
 import { addDataToMap } from "kepler.gl/actions";
 
-// Define the reducer
-const reducers = combineReducers({
-  keplerGl: keplerGlReducer,
-});
-
 // Create the store
-const store = createStore(reducers, {}, applyMiddleware(taskMiddleware));
+const store = configureStore({
+  reducer: {
+    keplerGl: keplerGlReducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(taskMiddleware),
+  devTools: process.env.NODE_ENV !== "production",
+});
 
 function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, is3D }) {
   const [data, setData] = useState(null);
@@ -23,19 +25,15 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
     // Parse CSV to array of objects
     const lines = csvData.split("\n");
     const headers = lines[0].split(",").map((header) => header.trim());
-
     const parsedData = [];
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
-
       const values = line.split(",");
       const entry = {};
-
       for (let j = 0; j < headers.length; j++) {
         entry[headers[j]] = values[j];
       }
-
       // Ensure latitude and longitude are numbers
       if (entry.Latitude && entry.Longitude) {
         entry.Latitude = parseFloat(entry.Latitude);
@@ -43,36 +41,31 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
         parsedData.push(entry);
       }
     }
-
     return parsedData;
   };
 
-  // Function to filter data based on time selections
-  const filterDataByTimeSelections = (data) => {
+  // Memoize the filter function to prevent it from changing on every render
+  const filterDataByTimeSelections = useCallback((data) => {
     if (!data) return data;
     
     // Format the time for comparison (from minutes to hour)
     const timeHour = Math.floor(currentTime / 60);
     
-    // This is a placeholder for actual filtering logic
-    // In a real app, you would implement filtering based on:
-    // - timeMode (specificDay, dayPattern, aggregate)
-    // - specificDate, dayPattern, or aggregateType
-    // - currentTime
-    
     console.log("Filtering data with:", { 
       timeMode, 
-      specificDate: timeMode === 'specificDay' ? specificDate : null,
-      dayPattern: timeMode === 'dayPattern' ? dayPattern : null,
-      aggregateType: timeMode === 'aggregate' ? aggregateType : null,
+      specificDate: timeMode === "specificDay" ? specificDate : null,
+      dayPattern: timeMode === "dayPattern" ? dayPattern : null,
+      aggregateType: timeMode === "aggregate" ? aggregateType : null,
       timeHour 
     });
     
+    // For now, return data unmodified.
+    // You can extend this function to filter `data.data.rows` as needed.
     return data;
-  };
+  }, [currentTime, timeMode, specificDate, dayPattern, aggregateType]);
 
   useEffect(() => {
-    // Sample CSV data - in a real application, you would fetch this from an API
+    // Fetch sample CSV data - in a real application, fetch from an API
     fetch("/sample-toll-data.csv")
       .then((response) => response.text())
       .then((csvData) => {
@@ -154,7 +147,14 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
                       name: "Global Warming",
                       type: "sequential",
                       category: "Uber",
-                      colors: ["#5A1846", "#900C3F", "#C70039", "#E3611C", "#F1920E", "#FFC300"],
+                      colors: [
+                        "#5A1846",
+                        "#900C3F",
+                        "#C70039",
+                        "#E3611C",
+                        "#F1920E",
+                        "#FFC300",
+                      ],
                     },
                     radiusRange: [0, 50],
                     filled: true,
@@ -177,7 +177,13 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
             interactionConfig: {
               tooltip: {
                 fieldsToShow: {
-                  toll_data: ["Toll Date", "Toll Hour", "Vehicle Class", "CRZ Entries", "Detection Region"],
+                  toll_data: [
+                    "Toll Date",
+                    "Toll Hour",
+                    "Vehicle Class",
+                    "CRZ Entries",
+                    "Detection Region",
+                  ],
                 },
                 enabled: true,
               },
@@ -228,10 +234,7 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
   // Update the map when time selections change
   useEffect(() => {
     if (data) {
-      // In a real app, you would filter the data based on the time selections
       const filteredData = filterDataByTimeSelections(data);
-
-      // Update 3D settings
       const updatedMapConfig = {
         ...mapConfig,
         mapState: {
@@ -245,11 +248,10 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
           buildingLayer: {
             ...mapConfig.mapStyle?.buildingLayer,
             opacity: is3D ? 0.7 : 0.1,
-          }
-        }
+          },
+        },
       };
 
-      // Dispatch action to update the map
       store.dispatch(
         addDataToMap({
           datasets: [filteredData || data],
@@ -269,7 +271,9 @@ function Map({ currentTime, timeMode, specificDate, dayPattern, aggregateType, i
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
             <div className="p-4 bg-white rounded-lg shadow-md">
-              <p className="text-lg font-medium text-gray-800">Loading NYC Toll Data...</p>
+              <p className="text-lg font-medium text-gray-800">
+                Loading NYC Toll Data...
+              </p>
             </div>
           </div>
         ) : (

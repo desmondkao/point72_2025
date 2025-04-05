@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@reduxjs/toolkit": "^2.6.1",
     "assert": "^2.1.0",
     "kepler.gl": "^2.5.0",
     "lucide-react": "^0.487.0",

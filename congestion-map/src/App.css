@@ -96,3 +96,15 @@ main {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border-radius: 0.5rem;
 }
+
+/* COLORS */
+.navy-blue {
+  background-color: #1C2B42;
+}
+.aegean-blue {
+  background-color: #0B476D;
+}
+
+.aegean-blue:hover {
+  background-color: #245f85; /* light-grey-blue */
+}

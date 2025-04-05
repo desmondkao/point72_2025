@@ -80,20 +80,20 @@ function App() {
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      <header className="bg-blue-600 text-white p-4 shadow-md z-10">
+      <header className="navy-blue text-white p-4 shadow-md z-10">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">NYC Congestion Map</h1>
           
           <div className="flex items-center gap-4">
-            <div className="bg-blue-700 rounded-lg p-2 flex items-center gap-2">
+            <div className="aegean-blue rounded-lg p-2 flex items-center gap-2">
               <DollarSign size={18} />
               <div className="flex flex-col">
-                <span className="text-xs">Est. Congestion Fee</span>
+                <span className="text-xs">Toll Fee</span>
                 <span className="font-bold">${estimatedCost}</span>
               </div>
             </div>
             
-            <button className="bg-blue-500 hover:bg-blue-400 rounded-lg p-2 flex items-center gap-1">
+            <button className="aegean-blue hover:light-grey-blue rounded-lg p-2 flex items-center gap-1">
               <Info size={18} />
               <span>About</span>
             </button>
