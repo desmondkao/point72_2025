@@ -4,6 +4,8 @@ import VisualizationModeSelector from './components/VisualizationModeSelector';
 import MapDimensionToggle from './components/MapDimensionToggle';
 import Map from './components/Map';
 import './App.css'; // We'll create this for additional styling
+import "kepler.gl/umd/keplergl.min.css";
+
 
 function App() {
   // State for time selection
